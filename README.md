@@ -15,26 +15,8 @@ To use the SXT Framework, you need to copy the `sxt_head.hpp` file into your pro
 
 ## Usage
 
-The framework provides the `sxt::tokenizer` class, which allows you to split strings into tokens. Here is an example of how to use it:
+The framework provides the `sxt::tokenizer` class, which allows you to split strings into tokens.
 
-```cpp
-#include "sxt_head.hpp"
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string input = "hello + world = 42";
-    sxt::tokenizer<std::string> tokenizer(input.begin(), input.end());
-
-    while (true) {
-        auto token = tokenizer.next_new_token(0);
-        if (!token.is_valid()) break;
-        std::cout << "Token: " << token.value() << " (" << sxt::token_type_to_string(token.type()) << ")" << std::endl;
-    }
-
-    return 0;
-}
-```
 ## Examples
 
 Example 1: Simple Tokenization
@@ -48,7 +30,7 @@ int main() {
     sxt::tokenizer<std::string> tokenizer(input.begin(), input.end());
 
     while (true) {
-        auto token = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);
+        auto token = tokenizer.next_new_token(0);
         if (!token.is_valid()) break;
         std::cout << "Token: " << token.value() << " (" << sxt::token_type_to_string(token.type()) << ")" << std::endl;
     }
