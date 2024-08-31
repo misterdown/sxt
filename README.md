@@ -1,4 +1,4 @@
-# SXT Framework
+# SXT
 
 SXT is a small C++ framework designed to simplify string tokenization. It provides convenient tools for splitting strings into tokens, which can be useful for developing parsers, compilers, and other text-processing applications.
 
@@ -6,6 +6,7 @@ SXT is a small C++ framework designed to simplify string tokenization. It provid
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Examples](#examples)
 - [License](#license)
 
 ## Installation
@@ -34,5 +35,46 @@ int main() {
     return 0;
 }
 ```
+## Examples
+
+Example 1: Simple Tokenization
+```cpp
+#include "sxt_head.hpp"
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string input = "hello + world = 42";
+    sxt::tokenizer<std::string> tokenizer(input.begin(), input.end());
+
+    while (true) {
+        auto token = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);
+        if (!token.is_valid()) break;
+        std::cout << "Token: " << token.value() << " (" << sxt::token_type_to_string(token.type()) << ")" << std::endl;
+    }
+
+    return 0;
+}
+```
+Example 2: Tokenization with String Literals Support
+```cpp
+#include "sxt_head.hpp"
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string input = "\"hello world\" + 42";
+    sxt::tokenizer<std::string> tokenizer(input.begin(), input.end());
+
+    while (true) {
+        auto token = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);
+        if (!token.is_valid()) break;
+        std::cout << "Token: " << token.value() << " (" << sxt::token_type_to_string(token.type()) << ")" << std::endl;
+    }
+
+    return 0;
+}
+```
+
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
