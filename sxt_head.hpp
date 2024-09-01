@@ -1,3 +1,4 @@
+
 #ifndef SXT_HEAD_HPP_
 #   define SXT_HEAD_HPP_ 1
 #if (!(defined SXT_HPP_ISDIGIT)) || (!(defined SXT_HPP_ISALPHA)) || (!(defined SXT_HPP_ISSAPCE))
@@ -437,11 +438,11 @@ namespace sxt {
             case STX_TOKEN_TYPE_COLON:
                 return "COLON";
             case STX_TOKEN_TYPE_SEMICOLON:
-                return "SEMICOMMA";
+                return "SEMICOLON";
             case STX_TOKEN_TYPE_QUOTE:
                 return "QUOTE";
             case STX_TOKEN_TYPE_DOUBLE_QUOTE:
-                return "DOUBLE_QUOTE";
+                return "DOUBLE QUOTE";
             case STX_TOKEN_TYPE_STAR:
                 return "STAR";
             case STX_TOKEN_TYPE_TILDA:
@@ -497,11 +498,11 @@ namespace sxt {
             case STX_TOKEN_TYPE_COLON:
                 return L"COLON";
             case STX_TOKEN_TYPE_SEMICOLON:
-                return L"SEMICOMMA";
+                return L"SEMICOLON";
             case STX_TOKEN_TYPE_QUOTE:
                 return L"QUOTE";
             case STX_TOKEN_TYPE_DOUBLE_QUOTE:
-                return L"DOUBLE_QUOTE";
+                return L"DOUBLE QUOTE";
             case STX_TOKEN_TYPE_STAR:
                 return L"STAR";
             case STX_TOKEN_TYPE_TILDA:
