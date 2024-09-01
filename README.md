@@ -20,7 +20,7 @@ The framework provides the `sxt::tokenizer` class, which allows you to split str
 ### Requirements
 
 - C++11 or later
-- Optional: Standard Library (`<locale>`, `<type_traits>`, `<cassert>`, `<utility>`, `<iostream>`, `<string>`)
+- Optional: Standard Library (`<locale>`, `<type_traits>`, `<cassert>`, `<utility>`)
   - The framework can work without the Standard Library if the user correctly redefines the macros.
 
 ### Key Features
