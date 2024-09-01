@@ -5,16 +5,15 @@
 #if (defined SXT_HPP_ISDIGIT) || (defined SXT_HPP_ISALPHA) || (defined SXT_HPP_ISSAPCE)
     static_assert(0, "define SXT_HPP_ISDIGIT, SXT_HPP_ISALPHA and SXT_HPP_ISSAPCE if you defined one of them");
 #endif // defined SXT_HPP_ISDIGIT || defined SXT_HPP_ISALPHA || defined SXT_HPP_ISSAPCE
-
 #   include <locale> // for isalpha, isspace
-#   define SXT_HPP_ISDIGIT(c__) ((c__ >= '0') && (c__ <= '9'))
+#   define SXT_HPP_ISDIGIT(c__) (::std::isdigit(c__))
 #   define SXT_HPP_ISALPHA(c__) (::std::isalpha(c__))
 #   define SXT_HPP_ISSAPCE(c__) (::std::isspace(c__))
 #endif // !defined SXT_HPP_ISDIGIT || !defined SXT_HPP_ISALPHA || !defined SXT_HPP_ISSAPCE
-#if (!(defined SXR_HPP_CHAR_TRAITS))
+#if (!(defined SXR_HPP_DEFAULT_CHAR_TRAITS))
 #   include <type_traits> // for char_traits
-#   define SXR_HPP_CHAR_TRAITS ::std::char_traits
-#endif // !defined SXR_HPP_CHAR_TRAITS
+#   define SXR_HPP_DEFAULT_CHAR_TRAITS ::std::char_traits
+#endif // !defined SXR_HPP_DEFAULT_CHAR_TRAITS
 
 #if (!(defined SXT_HPP_ASSERT))
 #   include <cassert>
@@ -26,15 +25,17 @@
 #   define SXR_HPP_MOVE ::std::move
 #endif // !defined SXR_HPP_MOVE
 
-#define SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(it__, charcol__) do { ++(charcol__); ++(it__); } while(0)
-#define SXT__HPP_NEXT_CHAR_V(it__, itvalue__, charln__, charcol__) do { if (SXR_HPP_CHAR_TRAITS<char_type>::eq(itvalue__, '\n')) { charcol__ = 0ULL; ++(charln__); } else { ++(charcol__); }  ++(it__); } while(0)
+#define SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(it__, charcol__) ++(charcol__); ++(it__);// <- a bit slower. 
+//do { ++(charcol__); ++(it__); } while(0) // but..
+#define SXT__HPP_NEXT_CHAR_V(it__, itvalue__, charln__, charcol__) if (char_traits_type::eq(itvalue__, '\n')) { charcol__ = 0ULL; ++(charln__); } else { ++(charcol__); }  ++(it__);// <- a bit slower.
+//do { if (char_traits_type::eq(itvalue__, '\n')) { charcol__ = 0ULL; ++(charln__); } else { ++(charcol__); }  ++(it__); } while(0) // but..
 
 namespace sxt {
     enum token_type {
         STX_TOKEN_TYPE_WORD,            // [a-z]|[A-Z]|_
         STX_TOKEN_TYPE_FLOAT,           // -|[0-9]|.
         STX_TOKEN_TYPE_INTEGER,         // [0-9]
-        STX_TOKEN_TYPE_STRING_LETTERAL, // " /. "
+        STX_TOKEN_TYPE_STRING_LETTERAL, // " ... "
         STX_TOKEN_TYPE_PLUS,            // + 
         STX_TOKEN_TYPE_MINUS,           // -
         STX_TOKEN_TYPE_ASSIGN,          // =
@@ -50,9 +51,11 @@ namespace sxt {
         STX_TOKEN_TYPE_DOUBLE_QUOTE,    // "
         STX_TOKEN_TYPE_STAR,            // *
         STX_TOKEN_TYPE_TILDA,           // ~
-        STX_TOKEN_TYPE_BACKCLASH,       // '\\'
-        STX_TOKEN_TYPE_MORE,            // '>'
-        STX_TOKEN_TYPE_LESS,            // '<'
+        STX_TOKEN_TYPE_BACKCLASH,       // '\'
+        STX_TOKEN_TYPE_MORE,            // >
+        STX_TOKEN_TYPE_LESS,            // <
+        STX_TOKEN_TYPE_EXCLAMATION,     // !
+        STX_TOKEN_TYPE_QUESTION,        // ?
         STX_TOKEN_TYPE_EOF,             // '\0'
         STX_TOKEN_TYPE_INVALID,         // 
         STX_TOKEN_TYPE_MAX_ENUM,        // 
@@ -81,6 +84,8 @@ namespace sxt {
         constexpr static char_type c_backslash   ()  {return '\\';};
         constexpr static char_type c_more        ()  {return '>';};
         constexpr static char_type c_less        ()  {return '<';};
+        constexpr static char_type c_exclamation ()  {return '!';};
+        constexpr static char_type c_question    ()  {return '?';};
 
         public:
         constexpr static const char_type* str_plus        ()    {return "+";};
@@ -101,9 +106,12 @@ namespace sxt {
         constexpr static const char_type* str_backslash   ()    {return "\\";};
         constexpr static const char_type* str_more        ()    {return ">";};
         constexpr static const char_type* str_less        ()    {return "<";};
+        constexpr static const char_type* str_exclamation ()    {return "!";};
+        constexpr static const char_type* str_question    ()    {return "?";};
     };
+
     template <>
-    struct token_symbols_trait<wchar_t>{
+    struct token_symbols_trait<wchar_t> {
         public:
         typedef wchar_t char_type;
 
@@ -126,6 +134,8 @@ namespace sxt {
         constexpr static char_type c_backslash   ()  {return L'\\';};
         constexpr static char_type c_more        ()  {return L'>';};
         constexpr static char_type c_less        ()  {return L'<';};
+        constexpr static char_type c_exclamation ()  {return L'!';};
+        constexpr static char_type c_question    ()  {return L'?';};
 
         public:
         constexpr static const char_type* str_plus        ()    {return L"+";};
@@ -146,12 +156,16 @@ namespace sxt {
         constexpr static const char_type* str_backslash   ()    {return L"\\";};
         constexpr static const char_type* str_more        ()    {return L">";};
         constexpr static const char_type* str_less        ()    {return L"<";};
+        constexpr static const char_type* str_exclamation ()    {return L"!";};
+        constexpr static const char_type* str_question    ()    {return L"?";};
     };
 
     enum ext_token_type_flag_bit {
+        STX_EXT_TOKEN_TYPE_FLAG_BIT_NONE = (0),
         STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL = (1 << 0),
         STX_EXT_TOKEN_TYPE_FLAG_BIT_MAX_ENUM,
     };
+
     template<class StringT_>
     struct token_new {
         public:
@@ -188,52 +202,28 @@ namespace sxt {
             return (type_ < STX_TOKEN_TYPE_EOF);
         }
     };
-    template <class ItearatorT_>
-    struct token_view {
-        public:
-        typedef ItearatorT_ const_iterator;
-
-        private:
-        const_iterator begin_;
-        const_iterator end_;
-        token_type type_;
-
-        public:
-        [[nodiscard]] const_iterator begin() const noexcept {
-            return begin_;
-        }
-        [[nodiscard]] const_iterator end() const noexcept {
-            return end_;
-        }
-        [[nodiscard]] token_type type() const noexcept {
-            return type_;
-        }
-        [[nodiscard]] bool is_valid() const noexcept {
-            return (type_ < STX_TOKEN_TYPE_EOF);
-        }
-    };
     /**
      * @brief A tokenizer class that can be configured to split input strings into tokens based on customizable delimiters and traits.
      *
      * @tparam StringT_ type of string to use.
-     * @tparam ConstIteratorT_ the type of the const iterator for the input string. Defaults to the const iterator type of StringT_.
-     * @tparam TokenSymbolsTraitsT_ the type of the token symbols traits. Defaults to token_symbols_trait<typename StringT_::value_type>.
+     * @tparam CharTraitsT_ the type of the срфк traits. Defaults to token_symbols_trait<typename StringT_::value_type>.
+     * @tparam TokenSymbolsTraitsT_ the type of the token symbols traits. Defaults to SXR_HPP_DEFAULT_CHAR_TRAITS<typename StringT_::value_type>.
      */
-    template<class StringT_, class ConstIteratorT_ = typename StringT_::const_iterator, class TokenSymbolsTraitsT_ = token_symbols_trait<typename StringT_::value_type>>
+    template<class StringT_, class CharTraitsT_ = SXR_HPP_DEFAULT_CHAR_TRAITS<typename StringT_::value_type>, class TokenSymbolsTraitsT_ = token_symbols_trait<typename StringT_::value_type>>
     struct tokenizer {
         public:
-        typedef ConstIteratorT_ const_iterator;
+        typedef typename StringT_::const_iterator const_iterator;
         typedef token_new<StringT_> token_new_type;
-        typedef token_view<StringT_> token_view_type;
         typedef typename StringT_::value_type char_type;
         typedef TokenSymbolsTraitsT_ symbols_trait_type;
+        typedef CharTraitsT_ char_traits_type;
 
         private:
         const_iterator begin_;  ///@brief The beginning iterator of the input range.
-        const_iterator current_;  ///@brief The current iterator position in the input range.
-        const_iterator end_;  ///@brief The ending iterator of the input range.
-        size_t line_{0ULL};  ///@brief The current line number in the input range.
-        size_t colon_{0ULL};  ///@brief The current column number in the input rang
+        const_iterator current_;///@brief The current iterator position in the input range.
+        const_iterator end_;    ///@brief The ending iterator of the input range.
+        size_t line_{0ULL};     ///@brief The current line number in the input range.
+        size_t colon_{0ULL};    ///@brief The current column number in the input range.
 
         public:
         tokenizer() {
@@ -261,7 +251,7 @@ namespace sxt {
                 token_type numberType = STX_TOKEN_TYPE_INTEGER;
                 while (currentr != end__) {
                     const char_type currentValue = *currentr;
-                    if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, '.')) {
+                    if (char_traits_type::eq(currentValue, '.')) {
                         if (numberType == STX_TOKEN_TYPE_FLOAT) 
                             break;
                         else
@@ -274,7 +264,7 @@ namespace sxt {
                 return token_new_type(numberType, StringT_(b, currentr));
             };
             const auto isWordSymbol = [](char_type c) {
-                return (SXT_HPP_ISALPHA(c) || (SXR_HPP_CHAR_TRAITS<char_type>::eq(c, '_')));
+                return (SXT_HPP_ISALPHA(c) || (char_traits_type::eq(c, '_')));
             };
 
             while (current_ != end_) {
@@ -291,49 +281,63 @@ namespace sxt {
                         SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     }
                     return token_new_type(STX_TOKEN_TYPE_WORD, StringT_(wordStart, current_));
+                    
                 } else if (SXT_HPP_ISDIGIT(currentValue)) {
                     return createNumberToken(current_, colon_, end_, current_);
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_plus())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_plus())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_PLUS,  symbols_trait_type::str_plus());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_minus())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_minus())) {
                     const auto numberStart = current_;
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     currentValue = *current_;
                     if (SXT_HPP_ISDIGIT(currentValue))
                         return createNumberToken(current_, colon_, end_, numberStart);
                     return token_new_type(STX_TOKEN_TYPE_MINUS, symbols_trait_type::str_minus());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_assign())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_assign())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_ASSIGN, symbols_trait_type::str_assign());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_lparen())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_lparen())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_LPAREN, symbols_trait_type::str_lparen());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_rparen())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_rparen())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_RPAREN, symbols_trait_type::str_rparen());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_lcurly())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_lcurly())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_LCURLY, symbols_trait_type::str_lcurly());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_rcurly())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_rcurly())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_RCURLY, symbols_trait_type::str_rcurly());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_dot())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_dot())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_DOT, symbols_trait_type::str_dot());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_comma())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_comma())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_COMMA, symbols_trait_type::str_comma());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_colon())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_colon())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_COLON, symbols_trait_type::str_colon());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_semicolon())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_semicolon())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_SEMICOLON, symbols_trait_type::str_semicolon());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_quote())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_quote())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_QUOTE, symbols_trait_type::str_quote());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_double_quote())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_double_quote())) {
                     if (flags & STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL) {
                         const auto wordStart = current_;
                         SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
@@ -343,37 +347,51 @@ namespace sxt {
                             if (slash) {
                                 slash = false;
                             } else {
-                                if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_backslash())) {
+                                if (char_traits_type::eq(currentValue, symbols_trait_type::c_backslash())) {
                                     slash = true;
-                                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_double_quote())) {
+                                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_double_quote())) {
                                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                                     return token_new_type(STX_TOKEN_TYPE_STRING_LETTERAL, StringT_(wordStart, current_));
                                 }
                             }
                             SXT__HPP_NEXT_CHAR_V(current_, currentValue, line_, colon_);
                         }
-                        
                     } else {
                         SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                         return token_new_type(STX_TOKEN_TYPE_DOUBLE_QUOTE, symbols_trait_type::str_double_quote());
                     }
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_star())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_star())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_STAR, symbols_trait_type::str_star());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_tilda())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_tilda())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_TILDA, symbols_trait_type::str_tilda());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_backslash())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_backslash())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_BACKCLASH, symbols_trait_type::str_backslash());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_more())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_more())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_MORE, symbols_trait_type::str_more());
-                } else if (SXR_HPP_CHAR_TRAITS<char_type>::eq(currentValue, symbols_trait_type::c_less())) {
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_less())) {
                     SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     return token_new_type(STX_TOKEN_TYPE_LESS, symbols_trait_type::str_less());
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_exclamation())) {
+                    SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                    return token_new_type(STX_TOKEN_TYPE_EXCLAMATION, symbols_trait_type::str_exclamation());
+
+                } else if (char_traits_type::eq(currentValue, symbols_trait_type::c_question())) {
+                    SXT__HPP_NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                    return token_new_type(STX_TOKEN_TYPE_QUESTION, symbols_trait_type::str_question());
+
                 } else {
                     SXT_HPP_ASSERT(false); // unknown symbol
+                    return token_new_type();
                 }
             }
             return token_new_type();
@@ -434,6 +452,10 @@ namespace sxt {
                 return "MORE";
             case STX_TOKEN_TYPE_LESS:
                 return "LESS";
+            case STX_TOKEN_TYPE_EXCLAMATION:
+                return "EXCLAMATION";
+            case STX_TOKEN_TYPE_QUESTION:
+                return "QUESTION";
             case STX_TOKEN_TYPE_INVALID:
                 return "INVALID";
             case STX_TOKEN_TYPE_EOF:
@@ -441,6 +463,7 @@ namespace sxt {
             case STX_TOKEN_TYPE_MAX_ENUM:
             default:
                 SXT_HPP_ASSERT(false);
+                return "";
         }
     }
     const wchar_t* token_type_to_wstring(token_type tt) {
@@ -489,6 +512,10 @@ namespace sxt {
                 return L"MORE";
             case STX_TOKEN_TYPE_LESS:
                 return L"LESS";
+            case STX_TOKEN_TYPE_EXCLAMATION:
+                return L"EXCLAMATION";
+            case STX_TOKEN_TYPE_QUESTION:
+                return L"QUESTION";
             case STX_TOKEN_TYPE_INVALID:
                 return L"INVALID";
             case STX_TOKEN_TYPE_EOF:
@@ -496,6 +523,7 @@ namespace sxt {
             case STX_TOKEN_TYPE_MAX_ENUM:
             default:
                 SXT_HPP_ASSERT(false);
+                return L"";
         }
     }
 };
