@@ -53,14 +53,15 @@ void string_letterals_test() {
 
 void perfomance_test() {
     std::cout << "default perfomance test\n";
+    
+    const std::string data(
+    "std::wstring datal = L\"greate greate greate GREATE!!!!! \\\"not greate really\\\"\";\n"
+    "sxt::tokenizer<std::wstring> tokenizer(datal.begin(), datal.end());\n"
+    "sxt::token_new<std::wstring> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);\n"
+    );
     for (size_t e = 0; e < 5; ++e) {
         const auto start = std::chrono::steady_clock::now();
         for (size_t i = 0; i < 500000; ++i) {
-            const std::string data(
-            "std::wstring datal = L\"greate greate greate GREATE!!!!! \\\"not greate really\\\"\";\n"
-            "sxt::tokenizer<std::wstring> tokenizer(datal.begin(), datal.end());\n"
-            "sxt::token_new<std::wstring> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);\n"
-            );
             sxt::tokenizer<std::string> tokenizer(data.begin(), data.end());
             while (true) {
                 const sxt::token_new<std::string> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);
@@ -71,18 +72,19 @@ void perfomance_test() {
         std::cout << (double)(std::chrono::steady_clock::now() - start).count() / (double)std::chrono::steady_clock::period::den << '\n';
     }
 }
-#if (__cplusplus > 202002L)
+#if (__cplusplus >= 202002L)
 void perfomance_view_test() { //speed up x4 on O0 and ~x2 on O3
     std::cout << "perfomance test with string views\n";
+    
+    const std::string data(
+    "std::wstring datal = L\"greate greate greate GREATE!!!!! \\\"not greate really\\\"\";\n"
+    "sxt::tokenizer<std::wstring> tokenizer(datal.begin(), datal.end());\n"
+    "sxt::token_new<std::wstring> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);\n"
+    );
+    const std::string_view view = data;
     for (size_t e = 0; e < 5; ++e) {
         const auto start = std::chrono::steady_clock::now();
         for (size_t i = 0; i < 500000; ++i) {
-            const std::string data(
-            "std::wstring datal = L\"greate greate greate GREATE!!!!! \\\"not greate really\\\"\";\n"
-            "sxt::tokenizer<std::wstring> tokenizer(datal.begin(), datal.end());\n"
-            "sxt::token_new<std::wstring> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);\n"
-            );
-            const std::string_view view = data;
             sxt::tokenizer<std::string_view> tokenizer(view.begin(), view.end());
             while (true) {
                 const sxt::token_new<std::string_view> tk = tokenizer.next_new_token(sxt::STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL);
