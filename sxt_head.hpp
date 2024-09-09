@@ -1,6 +1,5 @@
-
-#ifndef SXT_HEAD_HPP
-#   define SXT_HEAD_HPP 1
+#ifndef SXT_HEAD_HPP_
+#   define SXT_HEAD_HPP_ 1
 #if (!(defined SXT_ISDIGIT)) || (!(defined SXT_ISALPHA)) || (!(defined SXT_ISSAPCE))
 
 #if (defined SXT_ISDIGIT) || (defined SXT_ISALPHA) || (defined SXT_ISSAPCE)
