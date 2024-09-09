@@ -161,7 +161,7 @@ namespace sxt {
     };
 
     template<class StringT_>
-    struct token_new {
+    struct value_token {
         public:
         typedef StringT_& reference;
         typedef const StringT_& const_reference;
@@ -172,13 +172,13 @@ namespace sxt {
         token_type type_;
         
         public:
-        token_new() : value_(), type_(STX_TOKEN_TYPE_INVALID) {
+        value_token() : value_(), type_(STX_TOKEN_TYPE_INVALID) {
 
         }
-        token_new(token_type type__, const StringT_& str__) : value_(str__), type_(type__) {
+        value_token(token_type type__, const StringT_& str__) : value_(str__), type_(type__) {
 
         }
-        token_new(token_type type__, StringT_&& str__) : value_(SXR_MOVE(str__)), type_(type__) {
+        value_token(token_type type__, StringT_&& str__) : value_(SXR_MOVE(str__)), type_(type__) {
 
         }
 
@@ -206,7 +206,7 @@ namespace sxt {
     struct tokenizer {
         public:
         typedef typename StringT_::const_iterator const_iterator;
-        typedef token_new<StringT_> token_new_type;
+        typedef value_token<StringT_> value_token_type;
         typedef typename StringT_::value_type char_type;
         typedef TokenSymbolsTraitsT_ symbols_trait_type;
 
@@ -236,9 +236,9 @@ namespace sxt {
          * @brief Retrieves the next token from the input range.
          *
          * @param flags the flags for token type.
-         * @return The next token of type token_new_type.
+         * @return The next token of type value_token_type.
          */
-        token_new_type next_new_token(ext_token_type_flag_bit flags) {
+        value_token_type next_new_token(ext_token_type_flag_bit flags) {
             const auto createNumberToken = [](const_iterator& currentr, size_t& colonr, const_iterator end__, const_iterator b) {
                 token_type numberType = STX_TOKEN_TYPE_INTEGER;
                 while (currentr != end__) {
@@ -253,7 +253,7 @@ namespace sxt {
                     }
                     SXT__NEXT_CHAR_WITHOUT_LINECHECK(currentr, colonr);
                 }
-                return token_new_type(numberType, StringT_(b, currentr));
+                return value_token_type(numberType, StringT_(b, currentr));
             };
             const auto isWordSymbol = [](char_type c) {
                 return (SXT_ISALPHA(c) || (c == '_'));
@@ -275,7 +275,7 @@ namespace sxt {
                             break;
                         SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
                     }
-                    return token_new_type(STX_TOKEN_TYPE_WORD, StringT_(wordStart, current_));
+                    return value_token_type(STX_TOKEN_TYPE_WORD, StringT_(wordStart, current_));
                     
                 } else if (currentTokenType == STX_TOKEN_TYPE_INTEGER) {
                     return createNumberToken(current_, colon_, end_, current_);
@@ -294,25 +294,25 @@ namespace sxt {
                                     slash = true;
                                 } else if (tokenType == STX_TOKEN_TYPE_DOUBLE_QUOTE) {
                                     SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
-                                    return token_new_type(STX_TOKEN_TYPE_STRING_LETTERAL, StringT_(wordStart, current_));
+                                    return value_token_type(STX_TOKEN_TYPE_STRING_LETTERAL, StringT_(wordStart, current_));
                                 }
                             }
                             SXT__NEXT_CHAR_V(current_, currentValue, line_, colon_);
                         }
                     } else {
                         SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
-                        return token_new_type(STX_TOKEN_TYPE_DOUBLE_QUOTE, StringT_(current_, current_ + 1));
+                        return value_token_type(STX_TOKEN_TYPE_DOUBLE_QUOTE, StringT_(current_ - 1, current_));
                     }
 
                 } else if (!this_type_is_valid(currentTokenType)) {
                     SXT_ASSERT(false); // unknown symbol
-                    return token_new_type();
+                    return value_token_type();
                 } else {
                     SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
-                    return token_new_type(currentTokenType,  StringT_(current_ - 1, current_));
+                    return value_token_type(currentTokenType,  StringT_(current_ - 1, current_));
                 }
             }
-            return token_new_type();
+            return value_token_type();
         }
         [[nodiscard]] size_t line() const noexcept {
             return line_;
