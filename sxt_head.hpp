@@ -1,5 +1,6 @@
-#ifndef SXT_HEAD_HPP_
-#   define SXT_HEAD_HPP_ 1
+
+#ifndef SXT_HEAD_HPP
+#   define SXT_HEAD_HPP 1
 #if (!(defined SXT_ISDIGIT)) || (!(defined SXT_ISALPHA)) || (!(defined SXT_ISSAPCE))
 
 #if (defined SXT_ISDIGIT) || (defined SXT_ISALPHA) || (defined SXT_ISSAPCE)
@@ -72,7 +73,7 @@ namespace sxt {
         typedef CharT_ char_type;
 
         public:
-        static token_type type_from_char(char_type c) {
+        [[nodiscard]] static token_type type_from_char(char_type c) noexcept {
             switch (c) {
                 case '+': return    STX_TOKEN_TYPE_PLUS;
                 case '-': return    STX_TOKEN_TYPE_MINUS;
@@ -116,7 +117,7 @@ namespace sxt {
         typedef wchar_t char_type;
 
         public:
-        static token_type type_from_char(char_type c) {
+        [[nodiscard]] static token_type type_from_char(char_type c) noexcept {
             switch (c) {
                 case L'+': return    STX_TOKEN_TYPE_PLUS;
                 case L'-': return    STX_TOKEN_TYPE_MINUS;
@@ -156,6 +157,8 @@ namespace sxt {
     enum ext_token_type_flag_bit {
         STX_EXT_TOKEN_TYPE_FLAG_BIT_NONE = (0),
         STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL = (1 << 0),
+        STX_EXT_TOKEN_TYPE_FLAG_BIT_UNKNOWN_AS_WORDS = (1 << 1),
+        STX_EXT_TOKEN_TYPE_FLAG_BIT_SIGNED_NUMBERS = (1 << 2),
         STX_EXT_TOKEN_TYPE_FLAG_BIT_MAX_ENUM,
     };
 
@@ -210,11 +213,11 @@ namespace sxt {
         typedef TokenSymbolsTraitsT_ symbols_trait_type;
 
         private:
-        const_iterator begin_;  ///@brief The beginning iterator of the input range.
-        const_iterator current_;///@brief The current iterator position in the input range.
-        const_iterator end_;    ///@brief The ending iterator of the input range.
-        size_t line_{0ULL};     ///@brief The current line number in the input range.
-        size_t colon_{0ULL};    ///@brief The current column number in the input range.
+        const_iterator begin_;  /// The beginning iterator of the input range.
+        const_iterator current_;/// The current iterator position in the input range.
+        const_iterator end_;    /// The ending iterator of the input range.
+        size_t line_{0ULL};     /// The current line number in the input range.
+        size_t column_{0ULL};    /// The current column number in the input range.
 
         public:
         tokenizer() {
@@ -238,33 +241,38 @@ namespace sxt {
          * @return The next token of type value_token_type.
          */
         value_token_type next_new_token(ext_token_type_flag_bit flags) {
-            const auto createNumberToken = [](const_iterator& currentr, size_t& colonr, const_iterator end__, const_iterator b) {
+            const auto createNumberToken = [](const_iterator& currentr, size_t& columnr, const_iterator end__, const_iterator b) {
                 token_type numberType = STX_TOKEN_TYPE_INTEGER;
-                while (currentr != end__) {
-                    const char_type currentValue = *currentr;
-                    if (currentValue == '.') {
-                        if (numberType == STX_TOKEN_TYPE_FLOAT) 
+                
+                for (char_type currentValue = *currentr; currentr != end__;  currentValue = *currentr) {
+                    token_type curType = symbols_trait_type::type_from_char(currentValue);
+                    if ((numberType == STX_TOKEN_TYPE_INTEGER) && (curType == token_type::STX_TOKEN_TYPE_DOT)) {
+                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(currentr, columnr);
+                        if ((currentr == end__) || (symbols_trait_type::type_from_char(*currentr) != token_type::STX_TOKEN_TYPE_INTEGER)) {
+                            --currentr;
+                            --columnr;
                             break;
-                        else
-                            numberType = STX_TOKEN_TYPE_FLOAT;
-                    } else if (!SXT_ISDIGIT(currentValue)) {
+                        }
+                        numberType = STX_TOKEN_TYPE_FLOAT;
+                    } else if (curType != token_type::STX_TOKEN_TYPE_INTEGER) {
                         break;
                     }
-                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(currentr, colonr);
+                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(currentr, columnr);
                 }
+                
                 return value_token_type(numberType, StringT_(b, currentr));
             };
             const auto isWordSymbol = [](char_type c) {
-                return (SXT_ISALPHA(c) || (c == '_'));
+                return symbols_trait_type::type_from_char(c) == token_type::STX_TOKEN_TYPE_WORD; // compiler have to optimize this on litteraly O1, so...
             };
 
             while (current_ != end_) {
                 auto currentValue = *current_;
                 if (SXT_ISSAPCE(currentValue)) {
-                    SXT__NEXT_CHAR_V(current_, currentValue, line_, colon_);
+                    SXT__NEXT_CHAR_V(current_, currentValue, line_, column_);
                     continue;
                 }
-                token_type currentTokenType = symbols_trait_type::type_from_char(currentValue);
+                const token_type currentTokenType = symbols_trait_type::type_from_char(currentValue);
                 
                 if (currentTokenType == STX_TOKEN_TYPE_WORD) {
                     const const_iterator wordStart = current_;
@@ -272,16 +280,23 @@ namespace sxt {
                         currentValue = *current_;
                         if (!isWordSymbol(currentValue))
                             break;
-                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
                     }
                     return value_token_type(STX_TOKEN_TYPE_WORD, StringT_(wordStart, current_));
                     
                 } else if (currentTokenType == STX_TOKEN_TYPE_INTEGER) {
-                    return createNumberToken(current_, colon_, end_, current_);
+                    return createNumberToken(current_, column_, end_, current_);
+                }  else if (currentTokenType == token_type::STX_TOKEN_TYPE_MINUS) {
+                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
+                    if (flags & STX_EXT_TOKEN_TYPE_FLAG_BIT_SIGNED_NUMBERS) {
+                        if ((current_ != end_) && (symbols_trait_type::type_from_char(*current_) == token_type::STX_TOKEN_TYPE_INTEGER))
+                            return createNumberToken(current_, column_, end_, current_ - 1);
+                    }
+                    return value_token_type(currentTokenType,  StringT_(current_ - 1, current_));
                 } else if (currentTokenType == STX_TOKEN_TYPE_DOUBLE_QUOTE) {
                     if (flags & STX_EXT_TOKEN_TYPE_FLAG_BIT_STRING_LETTERAL) {
                         const auto wordStart = current_;
-                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
                         bool slash = false;
                         while (current_ != end_) {
                             currentValue = *current_;
@@ -292,22 +307,27 @@ namespace sxt {
                                 if (tokenType == STX_TOKEN_TYPE_BACKCLASH) {
                                     slash = true;
                                 } else if (tokenType == STX_TOKEN_TYPE_DOUBLE_QUOTE) {
-                                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
                                     return value_token_type(STX_TOKEN_TYPE_STRING_LETTERAL, StringT_(wordStart, current_));
                                 }
                             }
-                            SXT__NEXT_CHAR_V(current_, currentValue, line_, colon_);
+                            SXT__NEXT_CHAR_V(current_, currentValue, line_, column_);
                         }
                     } else {
-                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
                         return value_token_type(STX_TOKEN_TYPE_DOUBLE_QUOTE, StringT_(current_ - 1, current_));
                     }
 
                 } else if (!this_type_is_valid(currentTokenType)) {
-                    SXT_ASSERT(false); // unknown symbol
-                    return value_token_type();
+                    if (flags & STX_EXT_TOKEN_TYPE_FLAG_BIT_UNKNOWN_AS_WORDS) {
+                        SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
+                        return value_token_type(STX_TOKEN_TYPE_WORD, StringT_(current_ - 1, current_));
+                    } else {
+                        SXT_ASSERT(false); // unknown symbol
+                        return value_token_type();
+                    }
                 } else {
-                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, colon_);
+                    SXT__NEXT_CHAR_WITHOUT_LINECHECK(current_, column_);
                     return value_token_type(currentTokenType,  StringT_(current_ - 1, current_));
                 }
             }
@@ -316,8 +336,8 @@ namespace sxt {
         [[nodiscard]] size_t line() const noexcept {
             return line_;
         }
-        [[nodiscard]] size_t colon() const noexcept {
-            return colon_;
+        [[nodiscard]] size_t column() const noexcept {
+            return column_;
         }
         [[nodiscard]] bool eof() const noexcept {
             return (current_ != end_);
