@@ -161,6 +161,7 @@ namespace sxt {
         STX_EXT_TOKEN_TYPE_FLAG_BIT_SIGNED_NUMBERS = (1 << 2),
         STX_EXT_TOKEN_TYPE_FLAG_BIT_MAX_ENUM,
     };
+    typedef int ext_token_type_flag_bits;
 
     template<class StringT_>
     struct value_token {
@@ -240,7 +241,7 @@ namespace sxt {
          * @param flags the flags for token type.
          * @return The next token of type value_token_type.
          */
-        value_token_type next_new_token(ext_token_type_flag_bit flags) {
+        value_token_type next_new_token(ext_token_type_flag_bits flags) {
             const auto createNumberToken = [](const_iterator& currentr, size_t& columnr, const_iterator end__, const_iterator b) {
                 token_type numberType = STX_TOKEN_TYPE_INTEGER;
                 
